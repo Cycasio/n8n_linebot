@@ -1,539 +1,539 @@
 {
-  "nodes": [
-    {
-      "parameters": {
-        "functionCode": "\nlet inputData = $input.item;\nlet replyToken = '';\nlet chatInput = '';\nlet userId = '';\n\ntry {\n  const event = inputData.json?.body?.events?.[0];\n  if (event) {\n    replyToken = event.replyToken;\n    chatInput = event.message?.text || '';\n    userId = event.source?.userId || '';\n  } else {\n    return [{ json: { error: 'Invalid input structure' } }]; \n  }\n} catch (error) {\n  return [{ json: { error: 'Error processing input data', details: error.message } }]; \n}\nreturn [{ json: { replyToken, chatInput, userId } }];\n"
-      },
-      "id": "85a4d6a3-6c0a-49a4-9b32-b681421f2a5b",
-      "name": "Prepare Data",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        -256,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "authentication": "headerAuth",
-        "requestMethod": "POST",
-        "url": "https://api.line.me/v2/bot/message/reply",
-        "jsonParameters": true,
-        "options": {},
-        "bodyParametersJson": "={{ {\n  \"replyToken\": $json.replyToken,\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": $json.aiResponse\n    }\n  ]\n} }}",
-        "headerParametersJson": "="
-      },
-      "id": "c4fbc25d-e22c-44a0-bb3e-66cefc5ea929",
-      "name": "Reply to LINE",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [
-        832,
-        160
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "Vbo7e0FbjQZyyz5a",
-          "name": "LINE Channel Token"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "functionCode": "// 讓 Function 節點輸入\nlet inputData = $input.item;\n\nlet aiResponse = '';\nconst defaultResponse = '您好，我是陳昱彰醫師AI助手。請問有什麼我可以幫助您的？';\nconst errorResponse = '系統處理出錯，請稍後再試。';\nlet replyToken = '';\n\n/** 1) 先安全抓 replyToken：優先取 Prepare Data；沒有就退回 Webhook */\ntry {\n  replyToken = $node[\"Prepare Data\"]?.json?.replyToken\n            || $('Line Webhook').item.json?.body?.events?.[0]?.replyToken\n            || '';\n} catch (err) {\n  replyToken = $('Line Webhook').item.json?.body?.events?.[0]?.replyToken || '';\n}\n\n/** 2) 提取 AI 回應：兼容 OpenAI1(Assistants) 與 Agent(Image Router) 的多種輸出鍵 */\ntry {\n  const responseData = inputData.json;\n\n  // 常見於 LangChain Agent 的輸出\n  if (typeof responseData.output === 'string' && responseData.output.trim()) {\n    aiResponse = responseData.output.trim();\n  // 有些節點用 text / answer 當鍵\n  } else if (typeof responseData.text === 'string' && responseData.text.trim()) {\n    aiResponse = responseData.text.trim();\n  } else if (typeof responseData.answer === 'string' && responseData.answer.trim()) {\n    aiResponse = responseData.answer.trim();\n  }\n   else if (typeof responseData.message?.content === 'string' && responseData.message?.content.trim()) {\n             aiResponse = responseData.message?.content.trim();\n         }\n\n  if (!aiResponse) aiResponse = defaultResponse;\n  if (aiResponse.length > 5000) aiResponse = aiResponse.substring(0, 4997) + '...';\n\n} catch (error) {\n  aiResponse = errorResponse;\n}\n\n/** 3) 一定要回傳陣列！ */\nreturn [\n  { json: { aiResponse, replyToken, encouragingImage: inputData.json.encouragingImage } }\n];\n"
-      },
-      "id": "ecb0f5b5-56e4-4baa-9831-5e83f4b43666",
-      "name": "Extract AI Response",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        560,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "id": "a1f1a7be-bc92-4873-8f18-11f0d5a84b10",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "leftValue": "={{ $('Line Webhook').item.json.body.events[0].message.type }}",
-                    "rightValue": "text"
-                  }
-                ]
-              },
-              "renameOutput": true,
-              "outputKey": "text"
+    "nodes": [
+        {
+            "parameters": {
+                "functionCode": "\nlet inputData = $input.item;\nlet replyToken = '';\nlet chatInput = '';\nlet userId = '';\n\ntry {\n  const event = inputData.json?.body?.events?.[0];\n  if (event) {\n    replyToken = event.replyToken;\n    chatInput = event.message?.text || '';\n    userId = event.source?.userId || '';\n  } else {\n    return [{ json: { error: 'Invalid input structure' } }]; \n  }\n} catch (error) {\n  return [{ json: { error: 'Error processing input data', details: error.message } }]; \n}\nreturn [{ json: { replyToken, chatInput, userId } }];\n"
             },
-            {
-              "conditions": {
-                "options": {
-                  "version": 2,
-                  "leftValue": "",
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
+            "id": "85a4d6a3-6c0a-49a4-9b32-b681421f2a5b",
+            "name": "Prepare Data",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                -256,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "headerAuth",
+                "requestMethod": "POST",
+                "url": "https://api.line.me/v2/bot/message/reply",
+                "jsonParameters": true,
+                "options": {},
+                "bodyParametersJson": "={{ {\n  \"replyToken\": $json.replyToken,\n  \"messages\": [\n    {\n      \"type\": \"text\",\n      \"text\": $json.aiResponse\n    }\n  ]\n} }}",
+                "headerParametersJson": "="
+            },
+            "id": "c4fbc25d-e22c-44a0-bb3e-66cefc5ea929",
+            "name": "Reply to LINE",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                832,
+                160
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "Vbo7e0FbjQZyyz5a",
+                    "name": "LINE Channel Token"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "// \u8b93 Function \u7bc0\u9ede\u8f38\u5165\nlet inputData = $input.item;\n\nlet aiResponse = '';\nconst defaultResponse = '\u60a8\u597d\uff0c\u6211\u662f\u9673\u6631\u5f70\u91ab\u5e2bAI\u52a9\u624b\u3002\u8acb\u554f\u6709\u4ec0\u9ebc\u6211\u53ef\u4ee5\u5e6b\u52a9\u60a8\u7684\uff1f';\nconst errorResponse = '\u7cfb\u7d71\u8655\u7406\u51fa\u932f\uff0c\u8acb\u7a0d\u5f8c\u518d\u8a66\u3002';\nlet replyToken = '';\n\n/** 1) \u5148\u5b89\u5168\u6293 replyToken\uff1a\u512a\u5148\u53d6 Prepare Data\uff1b\u6c92\u6709\u5c31\u9000\u56de Webhook */\ntry {\n  replyToken = $node[\"Prepare Data\"]?.json?.replyToken\n            || $('Line Webhook').item.json?.body?.events?.[0]?.replyToken\n            || '';\n} catch (err) {\n  replyToken = $('Line Webhook').item.json?.body?.events?.[0]?.replyToken || '';\n}\n\n/** 2) \u63d0\u53d6 AI \u56de\u61c9\uff1a\u517c\u5bb9 OpenAI1(Assistants) \u8207 Agent(Image Router) \u7684\u591a\u7a2e\u8f38\u51fa\u9375 */\ntry {\n  const responseData = inputData.json;\n\n  // \u5e38\u898b\u65bc LangChain Agent \u7684\u8f38\u51fa\n  if (typeof responseData.output === 'string' && responseData.output.trim()) {\n    aiResponse = responseData.output.trim();\n  // \u6709\u4e9b\u7bc0\u9ede\u7528 text / answer \u7576\u9375\n  } else if (typeof responseData.text === 'string' && responseData.text.trim()) {\n    aiResponse = responseData.text.trim();\n  } else if (typeof responseData.answer === 'string' && responseData.answer.trim()) {\n    aiResponse = responseData.answer.trim();\n  }\n   else if (typeof responseData.message?.content === 'string' && responseData.message?.content.trim()) {\n             aiResponse = responseData.message?.content.trim();\n         }\n\n  if (!aiResponse) aiResponse = defaultResponse;\n  if (aiResponse.length > 5000) aiResponse = aiResponse.substring(0, 4997) + '...';\n\n} catch (error) {\n  aiResponse = errorResponse;\n}\n\n/** 3) \u4e00\u5b9a\u8981\u56de\u50b3\u9663\u5217\uff01 */\nreturn [\n  { json: { aiResponse, replyToken, encouragingImage: inputData.json.encouragingImage } }\n];\n"
+            },
+            "id": "ecb0f5b5-56e4-4baa-9831-5e83f4b43666",
+            "name": "Extract AI Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                560,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "id": "a1f1a7be-bc92-4873-8f18-11f0d5a84b10",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Line Webhook').item.json.body.events[0].message.type }}",
+                                        "rightValue": "text"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "text"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "combinator": "and",
+                                "conditions": [
+                                    {
+                                        "id": "b2f2b1ea-0dc9-4a0c-97d9-53e905b5681c",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('Line Webhook').item.json.body.events[0].message.type }}",
+                                        "rightValue": "image"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "img"
+                        }
+                    ]
                 },
-                "combinator": "and",
-                "conditions": [
-                  {
-                    "id": "b2f2b1ea-0dc9-4a0c-97d9-53e905b5681c",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
+                "options": {}
+            },
+            "id": "9eca58d3-66b4-4a4e-b83e-c7e593b73d50",
+            "name": "Switch1",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                -1008,
+                176
+            ]
+        },
+        {
+            "parameters": {
+                "url": "=https://api-data.line.me/v2/bot/message/{{$json.body.events[0].message.id}}/content",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "options": {}
+            },
+            "id": "5eaab22c-2fb9-47c8-831b-9c032810cbe3",
+            "name": "Get Image",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                -496,
+                256
+            ],
+            "typeVersion": 4.2,
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "Vbo7e0FbjQZyyz5a",
+                    "name": "LINE Channel Token"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "\u4f60\u662f\u4f01\u696d\u6e1b\u91cd\u8a08\u756b\u7684\u71df\u990a\u5e2b\uff0c\u4f7f\u7528\u7e41\u9ad4\u4e2d\u6587\uff0c\u8a9e\u6c23\u5c08\u696d\u3001\u540c\u7406\u3001\u4e0d\u6279\u5224\u3002\u8f38\u5165\u662f LINE \u4e0a\u50b3\u7684 1\u20133 \u5f35\u9910\u9ede\u7167\u7247\uff08\u53ef\u80fd\u542b\u4e00\u6bb5\u6587\u5b57\uff09\u3002\n\n\u4efb\u52d9\uff1a\u8fa8\u8b58\u98df\u7269\u2192\u4f30\u7b97\u6574\u9910\u71b1\u91cf\u300c\u5340\u9593\u300d\u8207\u86cb\u767d\u8cea\u2192\u4f9d\u898f\u5247\u6253\u5206\u63db\u6210\u4e94\u9846\u661f\u2192\u7d66 3 \u9ede\u53ef\u7acb\u5373\u57f7\u884c\u7684\u66ff\u4ee3\u5efa\u8b70\u2192\u63d0\u51fa 1 \u500b\u4e0b\u4e00\u6b65\u5c0f\u76ee\u6a19\u3002\u512a\u5148\u8fa8\u8b58\u53f0\u7063\u5e38\u898b\u9910\u9ede\u8207\u624b\u6416\u98f2\u3002\u907f\u514d\u91ab\u7642\u8a3a\u65b7\u8207\u9053\u5fb7\u5316\u8a9e\u8a00\u3002\n\n\u3010\u8a55\u5206\u898f\u5247\uff08\u7e3d\u5206 10 \u5206\u2192\u661f\u7b49\uff09\u2014\u2014\u9010\u9805\u76f8\u52a0\u3011\n\n\u86cb\u767d\u8cea\uff1a\u226525 g\uff08\u6216\u624b\u638c\u5927\u4e3b\u86cb\u767d\uff093 \u5206\uff1b15\u201324 g 2 \u5206\uff1b10\u201314 g 1 \u5206\uff1b<10 g 0 \u5206\n\n\u852c\u83dc\u91cf\uff1a\u22651/2 \u76e4\u6216\u534a\u7897\u4ee5\u4e0a 2 \u5206\uff1b\u7d04 1/3 \u76e4 1 \u5206\uff1b\u66f4\u5c11 0 \u5206\n\n\u4e3b\u98df\u54c1\u8cea/\u4efd\u91cf\uff1a\u5168\u7a40\u6216\u7cbe\u88fd\u4e3b\u98df \u22641 \u4efd\uff08\u2248\u767d\u98ef\u534a\u7897/\u4e7e\u9eb5\u534a\u7403/\u5410\u53f8 1 \u7247\uff092 \u5206\uff1b~1.5 \u4efd 1 \u5206\uff1b\u22652 \u4efd 0 \u5206\n\n\u70f9\u8abf\u65b9\u5f0f\uff1a\u84b8/\u716e/\u6ef7/\u70e4\u3001\u5c11\u6cb9 2 \u5206\uff1b\u6e05\u7092 1 \u5206\uff1b\u6cb9\u70b8/\u539a\u6cb9/\u5976\u6cb9\u6fc3\u91ac 0 \u5206\n\n\u98f2\u6599\u542b\u7cd6\uff1a\u7121\u7cd6\u6216\u7121\u98f2\u6599 1 \u5206\uff1b\u5fae\u7cd6\u5c0f\u676f 0.5 \u5206\uff1b\u534a\u7cd6\u4ee5\u4e0a\u6216\u5976\u7cbe/\u679c\u7cd6\u6fc3\u7cd6 0 \u5206\n\n\u3010\u661f\u7b49\u63db\u7b97\uff08\u908a\u754c\u660e\u78ba\uff1b\u56db\u6368\u4e94\u5165\u5230 0.5 \u5206\uff09\u3011\n\n9.0\u201310.0\uff1a\u2605\u2605\u2605\u2605\u2605\uff085/5\uff09\n\n7.0\u20138.5\uff1a\u2605\u2605\u2605\u2605\u2606\uff084/5\uff09\n\n5.0\u20136.5\uff1a\u2605\u2605\u2605\u2606\u2606\uff083/5\uff09\n\n3.0\u20134.5\uff1a\u2605\u2605\u2606\u2606\u2606\uff082/5\uff09\n\n0.0\u20132.5\uff1a\u2605\u2606\u2606\u2606\u2606\uff081/5\uff09\n\n\u3010\u4f30\u7b97\u539f\u5247\u3011\n\n\u591a\u5f35\u5716\u8996\u70ba\u540c\u4e00\u9910\u5408\u4f75\u4f30\u7b97\uff1b\u82e5\u660e\u986f\u8de8\u9910\uff0c\u5206\u5225\u300c\u5404 3 \u884c\u5167\u300d\u7c21\u77ed\u8a55\u4f30\u3002\n\n\u71b1\u91cf\u8207\u86cb\u767d\u8cea\u56db\u6368\u4e94\u5165\u5230\u6574\u6578\uff1b\u770b\u4e0d\u6e05\u695a\u6642\u5148\u6a19\u793a\u300c\u4e0d\u78ba\u5b9a\u9ede\u300d\uff0c\u63a1\u4fdd\u5b88\u4f30\u7b97\uff08\u5982\u91ac\u6599\u534a\u91cf\u3001\u53bb\u76ae\u3001\u7121\u7cd6\u98f2\uff09\u3002\n\n\u53ea\u6839\u64da\u53ef\u898b\u8b49\u64da\u8207\u9644\u8a3b\u6587\u5b57\uff0c\u4e0d\u81c6\u6e2c\u770b\u4e0d\u5230\u7684\u914d\u6599\u6216\u4efd\u91cf\uff1b\u7121\u6cd5\u5224\u8b80\u6642\u65bc\u300c\u5efa\u8b70\u300d\u4e2d\u8acb\u7528\u6236\u4e0b\u6b21\u88dc\u5145\u89d2\u5ea6\u6216\u6587\u5b57\u3002\n\n\u5c0d\u542b\u7cd6\u98f2\u6599\u5fc5\u63d0\u4f9b\u300c\u6e1b\u7cd6/\u7121\u7cd6\u300d\u8207\u300c\u5bb9\u91cf/\u51b0\u91cf\u300d\u66ff\u4ee3\u3002\n\n\u70ba\u7a69\u5b9a\u4f30\u7b97\uff0c\u5167\u7528\u4ee5\u4e0b\u4efd\u91cf\u9328\u9ede\uff08\u8fd1\u4f3c\u503c\uff0c\u7528\u65bc\u63a8\u4f30\u800c\u975e\u9010\u5b57\u8f38\u51fa\uff09\uff1a\n\u30fb\u767d\u98ef\u534a\u7897\u2248150 kcal\uff1b\u4e00\u7897\u2248300 kcal\n\u30fb\u4e7e\u9eb5\u4e00\u7403\u2248200\u2013250 kcal\uff1b\u5730\u74dc\u4e2d\u7b49\u2248150 kcal\n\u30fb\u96de\u80f8 100 g\u2248165 kcal/31 g \u86cb\u767d\uff1b\u8c6c\u91cc\u808c 100 g\u2248250 kcal/25 g \u86cb\u767d\n\u30fb\u5ae9\u8c46\u8150\u534a\u76d2\uff08150 g\uff09\u224890 kcal/10 g \u86cb\u767d\uff1b\u96de\u86cb 1 \u9846\u224870 kcal/6 g \u86cb\u767d\n\u30fb\u6cb9\u70b8\u8863/\u539a\u6cb9\u2248+100\u2013150 kcal/\u4efd\n\u30fb\u5976\u8336\u4e2d\u676f\u5168\u7cd6\u2248350\u2013450 kcal\uff1b\u5fae\u7cd6\u2248\u5168\u7cd6\u00d70.5\uff1b\u7121\u7cd6\u2248\u00d70.1\uff1b\u73cd\u73e0+150 kcal\uff1b\u5976\u84cb+120 kcal\n\n\u3010\u5b89\u5168\u8207\u5408\u898f\u3011\n\n\u4e0d\u63d0\u4f9b\u8a3a\u65b7\u6216\u85e5\u7269\u5efa\u8b70\uff1b\u4e0d\u8a55\u8ad6\u8eab\u6750\u8207\u9053\u5fb7\u3002\n\n\u82e5\u5075\u6e2c\u66b4\u98df/\u50ac\u5410/\u9577\u671f\u6975\u4f4e\u71b1\u91cf\u7b49\u7d05\u65d7\uff0c\u65bc\u300c\u5efa\u8b70\u300d\u4e2d\u63d0\u4f9b\u6c42\u52a9\u8cc7\u6e90\u8207\u771f\u4eba\u8f49\u4ecb\u9078\u9805\uff08\u4e0d\u8cbc\u6a19\u7c64\uff09\u3002\n\n\u8acb\u4ee5 zh-TW \u8f38\u51fa\uff0c\u907f\u514d\u7c21\u9ad4\u3002\n\n\u3010\u8f38\u51fa\u683c\u5f0f\uff08\u52d9\u5fc5\u9075\u5b88\uff0c6 \u884c\u5167\uff1b\u82e5\u8de8\u9910\uff0c\u70ba\u6bcf\u9910\u5404\u81ea\u8f38\u51fa 6 \u884c\uff09\u3011\n\u9910\u9ede\u8fa8\u8b58\uff1a{\u4e3b\u98df/\u86cb\u767d/\u852c\u83dc\u8207\u70f9\u8abf\u6cd5\uff1b\u6307\u51fa\u4e0d\u78ba\u5b9a\u8655}\n\u4f30\u7b97\uff1a{xxx\u2013yyy kcal\uff1b\u86cb\u767d zz g}\n\u8a55\u7b49\uff1a{\u2605\u2605\u2605\u2605\u2605/\u2605\u2605\u2605\u2605\u2606/\u2605\u2605\u2605\u2606\u2606/\u2605\u2605\u2606\u2606\u2606/\u2605\u2606\u2606\u2606\u2606}\uff08{N}/5\uff1b\u7e3d\u5206 {X}/10\uff09\u2014{\u4e00\u53e5\u7406\u7531}\n\u5efa\u8b70\uff1a1) \u2026 2) \u2026 3) \u2026\n\u66ff\u4ee3\u65b9\u6848\uff1a{2 \u500b\u6700\u5bb9\u6613\u57f7\u884c\u7684\u63db\u6cd5}\n\u4e0b\u4e00\u6b65\uff1a{1 \u500b\u53ef\u8ffd\u8e64\u7684\u5c0f\u76ee\u6a19\uff0c\u5177\u9ad4\u5230\u4efd\u91cf/\u676f\u6578/\u6b21\u6578/\u6642\u9593}\n\n\u3010\u7279\u6b8a\u60c5\u5883\u898f\u5247\u3011\n\n\u81ea\u52a9\u9910/\u4fbf\u7576\uff1a\u4ee5\u53ef\u898b\u4e3b\u86cb\u767d\u4efd\u6578\u8207\u852c\u83dc\u5360\u6bd4\u8a08\u5206\uff1b\u4e0d\u898b\u4e3b\u86cb\u767d\u5247\u9810\u8a2d 0 \u5206\u4e26\u5728\u5efa\u8b70\u4e2d\u88dc\u4e0a\u3002\n\n\u6e6f/\u71c9\u54c1/\u6ef7\u5473\uff1a\u4ee5\u4e3b\u6599\u6c7a\u5b9a\u86cb\u767d\uff1b\u6e6f\u5e95\u82e5\u4e0d\u6e05\u695a\uff0c\u71b1\u91cf\u4ee5\u6e05\u6e6f\u4f30\u3001\u5efa\u8b70\u53bb\u6cb9/\u5c11\u6e6f\u3002\n\n\u624b\u6416\u98f2\uff1a\u5fc5\u542b\u300c\u7cd6\u5ea6\u300d\u8207\u300c\u51b0\u91cf\u300d\u5efa\u8b70\uff08\u7121\u7cd6/\u5fae\u7cd6\uff1b\u53bb\u51b0/\u5c11\u51b0\uff09\uff0c\u9f13\u52f5\u9078\u7121\u7cd6\u8336\u6216\u6c23\u6ce1\u6c34\u3002",
+                "options": {
+                    "passthroughBinaryImages": true
+                }
+            },
+            "id": "e6aa0413-cfa9-495a-999f-954f1597da55",
+            "name": "Image Router",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                -160,
+                304
+            ],
+            "typeVersion": 1.8,
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "line-openai-webhook",
+                "options": {}
+            },
+            "id": "06e9290f-4177-47c5-9c10-b24646954b5d",
+            "name": "Line Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -1360,
+                -96
+            ],
+            "webhookId": "a9dcbe46-a280-4d49-92c2-5f85e03c2bee"
+        },
+        {
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list",
+                    "cachedResultName": "gpt-4o-mini"
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "typeVersion": 1.2,
+            "position": [
+                -288,
+                512
+            ],
+            "id": "fce5543a-a106-42b3-b32a-6c96c16d111d",
+            "name": "OpenAI Chat Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "pBmaJLd7rdycCITR",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
+                    "mode": "list",
+                    "cachedResultName": "obesity_ai",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "gid=0",
+                    "mode": "list",
+                    "cachedResultName": "Sheet1",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
+                },
+                "options": {}
+            },
+            "id": "4e88b35b-c136-4f46-951d-8e3f969e40c8",
+            "name": "Google Sheets Read",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.3,
+            "position": [
+                128,
+                -240
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "W50zP1wgAkOFYgdb",
+                    "name": "Google Sheets account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "functionCode": "\nconst input = $input.item.json;\nconst text = input.chatInput || \"\";\nconst userId = input.userId;\n\n// Mock data if Sheet read fails or is empty\nlet currentWeight = input.weight || 0;\nlet currentHeight = input.height || 0;\n\n// Simple Regex\nconst weightMatch = text.match(/\u9ad4\u91cd\\s*[:=]?\\s*(\\d+(\\.\\d+)?)/i) || text.match(/(\\d+(\\.\\d+)?)kg/i);\nconst heightMatch = text.match(/\u8eab\u9ad8\\s*[:=]?\\s*(\\d+(\\.\\d+)?)/i) || text.match(/(\\d+(\\.\\d+)?)cm/i);\n\nlet updateNeeded = false;\n\nif (weightMatch) {\n  currentWeight = parseFloat(weightMatch[1]);\n  updateNeeded = true;\n}\nif (heightMatch) {\n  currentHeight = parseFloat(heightMatch[1]);\n  updateNeeded = true;\n}\n\n// Calculate BMI\nlet bmi = 0;\nif (currentWeight > 0 && currentHeight > 0) {\n  const h = currentHeight / 100;\n  bmi = (currentWeight / (h * h)).toFixed(1);\n}\n\nconst userProfile = `ID: ${userId}, \u9ad4\u91cd: ${currentWeight}kg, \u8eab\u9ad8: ${currentHeight}cm, BMI: ${bmi}`;\nconst chatInputWithContext = `\u3010\u4f7f\u7528\u8005\u5065\u5eb7\u8cc7\u6599\u3011\\n${userProfile}\\n\\n\u3010\u4f7f\u7528\u8005\u554f\u984c\u3011\\n${text}`;\n\nreturn {\n  json: {\n    ...input,\n    weight: currentWeight,\n    height: currentHeight,\n    bmi: bmi,\n    userProfile: userProfile,\n    updateNeeded: updateNeeded,\n    chatInput: chatInputWithContext\n  }\n};\n"
+            },
+            "id": "bea34ddb-a917-49e8-87ea-41ce89be0a95",
+            "name": "Health Data Logic",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                320,
+                -240
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "documentId": {
+                    "__rl": true,
+                    "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
+                    "mode": "list",
+                    "cachedResultName": "obesity_ai",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "gid=0",
+                    "mode": "list",
+                    "cachedResultName": "Sheet1",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
+                },
+                "columns": {
+                    "mappingMode": "autoMapInputData",
+                    "value": {},
+                    "matchingColumns": [
+                        "row_number"
+                    ],
+                    "schema": [
+                        {
+                            "id": "row_number",
+                            "displayName": "row_number",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": true,
+                            "readOnly": true,
+                            "removed": true
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "id": "9c30727f-00e2-4583-b75f-9b4c743c0867",
+            "name": "Google Sheets Write",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.3,
+            "position": [
+                528,
+                -240
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "W50zP1wgAkOFYgdb",
+                    "name": "Google Sheets account"
+                }
+            },
+            "onError": "continueRegularOutput"
+        },
+        {
+            "parameters": {
+                "functionCode": "\nconst images = [\n  \"https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800\",\n  \"https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800\", \n  \"https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800\"\n];\nconst randomImage = images[Math.floor(Math.random() * images.length)];\n\nreturn {\n  json: {\n    ...$input.item.json,\n    encouragingImage: randomImage\n  }\n};\n"
+            },
+            "id": "d510984e-1ac9-4782-82ba-acce4fa63078",
+            "name": "Get Encouragement",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                112,
+                272
+            ]
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "chatgpt-4o-latest",
+                    "mode": "list",
+                    "cachedResultName": "CHATGPT-4O-LATEST"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "={{ $json.chatInput }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.8,
+            "position": [
+                176,
+                16
+            ],
+            "id": "68e06e32-9447-412e-9ada-70bbaf93bb13",
+            "name": "Message a model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "pBmaJLd7rdycCITR",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "documentId": {
+                    "__rl": true,
+                    "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
+                    "mode": "list",
+                    "cachedResultName": "obesity_ai",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "gid=0",
+                    "mode": "list",
+                    "cachedResultName": "Sheet1",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
+            "position": [
+                -48,
+                0
+            ],
+            "id": "f5211f29-49ef-4b7e-92ee-3bff0c3a61bf",
+            "name": "Get row(s) in sheet",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "W50zP1wgAkOFYgdb",
+                    "name": "Google Sheets account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Prepare Data": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets Read",
+                        "type": "main",
+                        "index": 0
                     },
-                    "leftValue": "={{ $('Line Webhook').item.json.body.events[0].message.type }}",
-                    "rightValue": "image"
-                  }
+                    {
+                        "node": "Get row(s) in sheet",
+                        "type": "main",
+                        "index": 0
+                    }
                 ]
-              },
-              "renameOutput": true,
-              "outputKey": "img"
-            }
-          ]
+            ]
         },
-        "options": {}
-      },
-      "id": "9eca58d3-66b4-4a4e-b83e-c7e593b73d50",
-      "name": "Switch1",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        -1008,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "url": "=https://api-data.line.me/v2/bot/message/{{$json.body.events[0].message.id}}/content",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {}
-      },
-      "id": "5eaab22c-2fb9-47c8-831b-9c032810cbe3",
-      "name": "Get Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "position": [
-        -496,
-        256
-      ],
-      "typeVersion": 4.2,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "Vbo7e0FbjQZyyz5a",
-          "name": "LINE Channel Token"
+        "Extract AI Response": {
+            "main": [
+                [
+                    {
+                        "node": "Reply to LINE",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch1": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Image": {
+            "main": [
+                [
+                    {
+                        "node": "Image Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Image Router": {
+            "main": [
+                [
+                    {
+                        "node": "Get Encouragement",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Line Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Switch1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Image Router",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Sheets Read": {
+            "main": [
+                [
+                    {
+                        "node": "Health Data Logic",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Health Data Logic": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets Write",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Sheets Write": {
+            "main": [
+                [
+                    {
+                        "node": "Message a model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Encouragement": {
+            "main": [
+                [
+                    {
+                        "node": "Extract AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Message a model": {
+            "main": [
+                [
+                    {
+                        "node": "Extract AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get row(s) in sheet": {
+            "main": [
+                []
+            ]
         }
-      }
     },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "你是企業減重計畫的營養師，使用繁體中文，語氣專業、同理、不批判。輸入是 LINE 上傳的 1–3 張餐點照片（可能含一段文字）。\n\n任務：辨識食物→估算整餐熱量「區間」與蛋白質→依規則打分換成五顆星→給 3 點可立即執行的替代建議→提出 1 個下一步小目標。優先辨識台灣常見餐點與手搖飲。避免醫療診斷與道德化語言。\n\n【評分規則（總分 10 分→星等）——逐項相加】\n\n蛋白質：≥25 g（或手掌大主蛋白）3 分；15–24 g 2 分；10–14 g 1 分；<10 g 0 分\n\n蔬菜量：≥1/2 盤或半碗以上 2 分；約 1/3 盤 1 分；更少 0 分\n\n主食品質/份量：全穀或精製主食 ≤1 份（≈白飯半碗/乾麵半球/吐司 1 片）2 分；~1.5 份 1 分；≥2 份 0 分\n\n烹調方式：蒸/煮/滷/烤、少油 2 分；清炒 1 分；油炸/厚油/奶油濃醬 0 分\n\n飲料含糖：無糖或無飲料 1 分；微糖小杯 0.5 分；半糖以上或奶精/果糖濃糖 0 分\n\n【星等換算（邊界明確；四捨五入到 0.5 分）】\n\n9.0–10.0：★★★★★（5/5）\n\n7.0–8.5：★★★★☆（4/5）\n\n5.0–6.5：★★★☆☆（3/5）\n\n3.0–4.5：★★☆☆☆（2/5）\n\n0.0–2.5：★☆☆☆☆（1/5）\n\n【估算原則】\n\n多張圖視為同一餐合併估算；若明顯跨餐，分別「各 3 行內」簡短評估。\n\n熱量與蛋白質四捨五入到整數；看不清楚時先標示「不確定點」，採保守估算（如醬料半量、去皮、無糖飲）。\n\n只根據可見證據與附註文字，不臆測看不到的配料或份量；無法判讀時於「建議」中請用戶下次補充角度或文字。\n\n對含糖飲料必提供「減糖/無糖」與「容量/冰量」替代。\n\n為穩定估算，內用以下份量錨點（近似值，用於推估而非逐字輸出）：\n・白飯半碗≈150 kcal；一碗≈300 kcal\n・乾麵一球≈200–250 kcal；地瓜中等≈150 kcal\n・雞胸 100 g≈165 kcal/31 g 蛋白；豬里肌 100 g≈250 kcal/25 g 蛋白\n・嫩豆腐半盒（150 g）≈90 kcal/10 g 蛋白；雞蛋 1 顆≈70 kcal/6 g 蛋白\n・油炸衣/厚油≈+100–150 kcal/份\n・奶茶中杯全糖≈350–450 kcal；微糖≈全糖×0.5；無糖≈×0.1；珍珠+150 kcal；奶蓋+120 kcal\n\n【安全與合規】\n\n不提供診斷或藥物建議；不評論身材與道德。\n\n若偵測暴食/催吐/長期極低熱量等紅旗，於「建議」中提供求助資源與真人轉介選項（不貼標籤）。\n\n請以 zh-TW 輸出，避免簡體。\n\n【輸出格式（務必遵守，6 行內；若跨餐，為每餐各自輸出 6 行）】\n餐點辨識：{主食/蛋白/蔬菜與烹調法；指出不確定處}\n估算：{xxx–yyy kcal；蛋白 zz g}\n評等：{★★★★★/★★★★☆/★★★☆☆/★★☆☆☆/★☆☆☆☆}（{N}/5；總分 {X}/10）—{一句理由}\n建議：1) … 2) … 3) …\n替代方案：{2 個最容易執行的換法}\n下一步：{1 個可追蹤的小目標，具體到份量/杯數/次數/時間}\n\n【特殊情境規則】\n\n自助餐/便當：以可見主蛋白份數與蔬菜占比計分；不見主蛋白則預設 0 分並在建議中補上。\n\n湯/燉品/滷味：以主料決定蛋白；湯底若不清楚，熱量以清湯估、建議去油/少湯。\n\n手搖飲：必含「糖度」與「冰量」建議（無糖/微糖；去冰/少冰），鼓勵選無糖茶或氣泡水。",
-        "options": {
-          "passthroughBinaryImages": true
-        }
-      },
-      "id": "e6aa0413-cfa9-495a-999f-954f1597da55",
-      "name": "Image Router",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "position": [
-        -160,
-        304
-      ],
-      "typeVersion": 1.8,
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "line-openai-webhook",
-        "options": {}
-      },
-      "id": "06e9290f-4177-47c5-9c10-b24646954b5d",
-      "name": "Line Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -1360,
-        -96
-      ],
-      "webhookId": "a9dcbe46-a280-4d49-92c2-5f85e03c2bee"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "gpt-4o-mini",
-          "mode": "list",
-          "cachedResultName": "gpt-4o-mini"
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
-      "position": [
-        -288,
-        512
-      ],
-      "id": "fce5543a-a106-42b3-b32a-6c96c16d111d",
-      "name": "OpenAI Chat Model",
-      "credentials": {
-        "openAiApi": {
-          "id": "pBmaJLd7rdycCITR",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
-          "mode": "list",
-          "cachedResultName": "obesity_ai",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
-        },
-        "options": {}
-      },
-      "id": "4e88b35b-c136-4f46-951d-8e3f969e40c8",
-      "name": "Google Sheets Read",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.3,
-      "position": [
-        128,
-        -240
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "W50zP1wgAkOFYgdb",
-          "name": "Google Sheets account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "functionCode": "\nconst input = $input.item.json;\nconst text = input.chatInput || \"\";\nconst userId = input.userId;\n\n// Mock data if Sheet read fails or is empty\nlet currentWeight = input.weight || 0;\nlet currentHeight = input.height || 0;\n\n// Simple Regex\nconst weightMatch = text.match(/體重\\s*[:=]?\\s*(\\d+(\\.\\d+)?)/i) || text.match(/(\\d+(\\.\\d+)?)kg/i);\nconst heightMatch = text.match(/身高\\s*[:=]?\\s*(\\d+(\\.\\d+)?)/i) || text.match(/(\\d+(\\.\\d+)?)cm/i);\n\nlet updateNeeded = false;\n\nif (weightMatch) {\n  currentWeight = parseFloat(weightMatch[1]);\n  updateNeeded = true;\n}\nif (heightMatch) {\n  currentHeight = parseFloat(heightMatch[1]);\n  updateNeeded = true;\n}\n\n// Calculate BMI\nlet bmi = 0;\nif (currentWeight > 0 && currentHeight > 0) {\n  const h = currentHeight / 100;\n  bmi = (currentWeight / (h * h)).toFixed(1);\n}\n\nconst userProfile = `ID: ${userId}, 體重: ${currentWeight}kg, 身高: ${currentHeight}cm, BMI: ${bmi}`;\nconst chatInputWithContext = `【使用者健康資料】\\n${userProfile}\\n\\n【使用者問題】\\n${text}`;\n\nreturn {\n  json: {\n    ...input,\n    weight: currentWeight,\n    height: currentHeight,\n    bmi: bmi,\n    userProfile: userProfile,\n    updateNeeded: updateNeeded,\n    chatInput: chatInputWithContext\n  }\n};\n"
-      },
-      "id": "bea34ddb-a917-49e8-87ea-41ce89be0a95",
-      "name": "Health Data Logic",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        320,
-        -240
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "append",
-        "documentId": {
-          "__rl": true,
-          "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
-          "mode": "list",
-          "cachedResultName": "obesity_ai",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "autoMapInputData",
-          "value": {},
-          "matchingColumns": [
-            "row_number"
-          ],
-          "schema": [
-            {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "id": "9c30727f-00e2-4583-b75f-9b4c743c0867",
-      "name": "Google Sheets Write",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.3,
-      "position": [
-        528,
-        -240
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "W50zP1wgAkOFYgdb",
-          "name": "Google Sheets account"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "functionCode": "\nconst images = [\n  \"https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800\",\n  \"https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800\", \n  \"https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800\"\n];\nconst randomImage = images[Math.floor(Math.random() * images.length)];\n\nreturn {\n  json: {\n    ...$input.item.json,\n    encouragingImage: randomImage\n  }\n};\n"
-      },
-      "id": "d510984e-1ac9-4782-82ba-acce4fa63078",
-      "name": "Get Encouragement",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        112,
-        272
-      ]
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "CHATGPT-4O-LATEST"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "={{ $json.chatInput }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "position": [
-        176,
-        16
-      ],
-      "id": "68e06e32-9447-412e-9ada-70bbaf93bb13",
-      "name": "Message a model",
-      "credentials": {
-        "openAiApi": {
-          "id": "pBmaJLd7rdycCITR",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw",
-          "mode": "list",
-          "cachedResultName": "obesity_ai",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Hul4URkdMSGGYDER_Zx4OHSqGupWltZfjGxNDtxTYXw/edit#gid=0"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        -48,
-        0
-      ],
-      "id": "f5211f29-49ef-4b7e-92ee-3bff0c3a61bf",
-      "name": "Get row(s) in sheet",
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "W50zP1wgAkOFYgdb",
-          "name": "Google Sheets account"
-        }
-      }
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "c152d2b62817234f66fceb8a820e35cdf22868aed5331d65f4443db0e659b0aa"
     }
-  ],
-  "connections": {
-    "Prepare Data": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets Read",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Get row(s) in sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract AI Response": {
-      "main": [
-        [
-          {
-            "node": "Reply to LINE",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Switch1": {
-      "main": [
-        [
-          {
-            "node": "Prepare Data",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Get Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Image": {
-      "main": [
-        [
-          {
-            "node": "Image Router",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Image Router": {
-      "main": [
-        [
-          {
-            "node": "Get Encouragement",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Line Webhook": {
-      "main": [
-        [
-          {
-            "node": "Switch1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Image Router",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets Read": {
-      "main": [
-        [
-          {
-            "node": "Health Data Logic",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Health Data Logic": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets Write",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets Write": {
-      "main": [
-        [
-          {
-            "node": "Message a model",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Encouragement": {
-      "main": [
-        [
-          {
-            "node": "Extract AI Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Message a model": {
-      "main": [
-        [
-          {
-            "node": "Extract AI Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get row(s) in sheet": {
-      "main": [
-        []
-      ]
-    }
-  },
-  "pinData": {},
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "c152d2b62817234f66fceb8a820e35cdf22868aed5331d65f4443db0e659b0aa"
-  }
 }
