@@ -51,6 +51,7 @@
             font-weight: 600;
         }
         
+        input[type="password"],
         textarea {
             width: 100%;
             padding: 15px;
@@ -58,11 +59,17 @@
             border-radius: 10px;
             font-size: 16px;
             font-family: inherit;
-            resize: vertical;
-            min-height: 150px;
             transition: border-color 0.3s;
+            margin-bottom: 20px;
         }
         
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            margin-bottom: 5px;
+        }
+        
+        input:focus,
         textarea:focus {
             outline: none;
             border-color: #667eea;
@@ -72,7 +79,6 @@
             text-align: right;
             color: #999;
             font-size: 12px;
-            margin-top: 5px;
             margin-bottom: 20px;
         }
         
@@ -152,6 +158,16 @@
         <p class="subtitle">健康促進計畫 - 護理師專用</p>
         
         <form id="broadcastForm">
+            <label for="password">🔒 密碼</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                placeholder="請輸入密碼"
+                required
+                autocomplete="current-password"
+            >
+            
             <label for="message">廣播內容</label>
             <textarea 
                 id="message" 
@@ -181,6 +197,7 @@
         const WEBHOOK_URL = 'https://n8n.edfm.org/webhook/nurse-broadcast';
         
         const form = document.getElementById('broadcastForm');
+        const passwordInput = document.getElementById('password');
         const textarea = document.getElementById('message');
         const charCount = document.getElementById('charCount');
         const submitBtn = document.getElementById('submitBtn');
@@ -196,7 +213,14 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const password = passwordInput.value.trim();
             const message = textarea.value.trim();
+            
+            if (!password) {
+                showResult('請輸入密碼！', 'error');
+                return;
+            }
+            
             if (!message) {
                 showResult('請輸入廣播內容！', 'error');
                 return;
@@ -218,26 +242,36 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ 
+                        password: password,
+                        message: message 
+                    })
                 });
                 
                 const data = await response.json();
                 
-                console.log('收到的回應:', data); // Debug 用
+                console.log('收到的回應:', data);
                 
-                // 相容多種回傳格式
-                if (response.ok) {
-                    const successCount = data.details?.successCount ?? data.success ?? 0;
-                    const failedCount = data.details?.failedCount ?? data.failed ?? 0;
+                // 處理各種回應狀態
+                if (response.status === 401 || data.authenticated === false) {
+                    showResult('❌ 密碼錯誤！請檢查後重試', 'error');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                } else if (response.ok && data.status === 'success') {
+                    const successCount = data.details?.successCount ?? 0;
+                    const failedCount = data.details?.failedCount ?? 0;
                     
                     showResult(
                         `✅ 廣播完成！\n成功發送：${successCount} 人\n發送失敗：${failedCount} 人`,
                         'success'
                     );
+                    
+                    // 清空表單
                     textarea.value = '';
                     charCount.textContent = '0';
+                    // 保留密碼，方便連續發送
                 } else {
-                    showResult('❌ 發送失敗，請稍後再試或聯繫管理員', 'error');
+                    showResult(`❌ ${data.message || '發送失敗，請稍後再試'}`, 'error');
                 }
             } catch (error) {
                 showResult('❌ 網路錯誤，請檢查連線或聯繫管理員', 'error');
