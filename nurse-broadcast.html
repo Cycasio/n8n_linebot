@@ -109,6 +109,7 @@
             padding: 15px;
             border-radius: 10px;
             display: none;
+            white-space: pre-line;
         }
         
         .result.success {
@@ -177,7 +178,7 @@
     </div>
 
     <script>
-        const WEBHOOK_URL = 'https://n8n.edfm.org/webhook/nurse-broadcast'; // ← 在這裡填入 n8n webhook URL
+        const WEBHOOK_URL = 'https://n8n.edfm.org/webhook/nurse-broadcast';
         
         const form = document.getElementById('broadcastForm');
         const textarea = document.getElementById('message');
@@ -222,9 +223,15 @@
                 
                 const data = await response.json();
                 
-                if (data.status === 'success') {
+                console.log('收到的回應:', data); // Debug 用
+                
+                // 相容多種回傳格式
+                if (response.ok) {
+                    const successCount = data.details?.successCount ?? data.success ?? 0;
+                    const failedCount = data.details?.failedCount ?? data.failed ?? 0;
+                    
                     showResult(
-                        `✅ ${data.message}\n詳細資訊：成功 ${data.details.successCount} 人，失敗 ${data.details.failedCount} 人`,
+                        `✅ 廣播完成！\n成功發送：${successCount} 人\n發送失敗：${failedCount} 人`,
                         'success'
                     );
                     textarea.value = '';
